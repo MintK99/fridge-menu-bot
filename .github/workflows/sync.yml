@@ -1,26 +1,161 @@
-name: Fridge Menu Test
+name: Fridge Sync
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode: menu | recipe | estimate"
+        required: true
+        default: "menu"
+        type: choice
+        options:
+          - menu
+          - recipe
+          - estimate
+      recipe_id:
+        description: "Recipe ID (required for recipe mode)"
+        required: false
+        default: ""
+        type: string
+      servings:
+        description: "Override servings (optional)"
+        required: false
+        default: ""
+        type: string
+      concept:
+        description: "Override concept (optional)"
+        required: false
+        default: ""
+        type: string
+      trigger:
+        description: "Trigger source"
+        required: true
+        default: "telegram"
+        type: choice
+        options:
+          - schedule
+          - telegram
+      no_cache:
+        description: "Disable cache (menu mode; schedule uses cache by default)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+  schedule:
+    # KST 18:30 = UTC 09:30
+    - cron: "30 9 * * *"
+
+concurrency:
+  group: fridge-sync-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      TZ: Asia/Seoul
+      OPENAI_MODEL: gpt-4o-mini
+
+      # Required secrets
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+
+      # Pick ONE of these (recommended: B64)
+      GOOGLE_SA_JSON_B64: ${{ secrets.GOOGLE_SA_JSON_B64 }}
+      # GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
+
+      # Telegram (optional, but needed if you want notifications)
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install openai gspread google-auth
 
-      - name: Run script
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          SHEET_ID: ${{ secrets.SHEET_ID }}
-        run: python sync_fridge.py
+      - name: Resolve inputs
+        id: inputs
+        shell: bash
+        run: |
+          # Defaults for schedule runs
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            MODE="menu"
+            TRIGGER="schedule"
+            NO_CACHE="false"
+            RECIPE_ID=""
+            SERVINGS=""
+            CONCEPT=""
+          else
+            MODE="${{ inputs.mode }}"
+            TRIGGER="${{ inputs.trigger }}"
+            NO_CACHE="${{ inputs.no_cache }}"
+            RECIPE_ID="${{ inputs.recipe_id }}"
+            SERVINGS="${{ inputs.servings }}"
+            CONCEPT="${{ inputs.concept }}"
+          fi
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "trigger=$TRIGGER" >> "$GITHUB_OUTPUT"
+          echo "no_cache=$NO_CACHE" >> "$GITHUB_OUTPUT"
+          echo "recipe_id=$RECIPE_ID" >> "$GITHUB_OUTPUT"
+          echo "servings=$SERVINGS" >> "$GITHUB_OUTPUT"
+          echo "concept=$CONCEPT" >> "$GITHUB_OUTPUT"
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -e
+          [[ -n "${OPENAI_API_KEY}" ]] || (echo "Missing secret: OPENAI_API_KEY" && exit 1)
+          [[ -n "${GOOGLE_SHEET_ID}" ]] || (echo "Missing secret: GOOGLE_SHEET_ID" && exit 1)
+          if [[ -z "${GOOGLE_SA_JSON_B64}" && -z "${GOOGLE_SA_JSON}" ]]; then
+            echo "Missing secret: GOOGLE_SA_JSON_B64 (recommended) or GOOGLE_SA_JSON"
+            exit 1
+          fi
+
+      - name: Run sync_fridge.py
+        shell: bash
+        run: |
+          set -e
+
+          CMD=(python sync_fridge.py --mode "${{ steps.inputs.outputs.mode }}" --trigger "${{ steps.inputs.outputs.trigger }}")
+
+          # Optional flags
+          if [[ -n "${{ steps.inputs.outputs.recipe_id }}" ]]; then
+            CMD+=(--recipe_id "${{ steps.inputs.outputs.recipe_id }}")
+          fi
+          if [[ -n "${{ steps.inputs.outputs.servings }}" ]]; then
+            CMD+=(--servings "${{ steps.inputs.outputs.servings }}")
+          fi
+          if [[ -n "${{ steps.inputs.outputs.concept }}" ]]; then
+            CMD+=(--concept "${{ steps.inputs.outputs.concept }}")
+          fi
+          if [[ "${{ steps.inputs.outputs.no_cache }}" == "true" ]]; then
+            CMD+=(--no_cache)
+          fi
+
+          echo "Running: ${CMD[*]}"
+          "${CMD[@]}"
+
+      - name: Upload logs (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-info
+          path: |
+            ${{ github.workspace }}
+          if-no-files-found: ignore
