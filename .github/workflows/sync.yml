@@ -22,5 +22,5 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          SHEET_NAME: FridgeInventory
+          SHEET_ID: ${{ secrets.SHEET_ID }}
         run: python sync_fridge.py
