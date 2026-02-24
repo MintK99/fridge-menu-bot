@@ -45,8 +45,8 @@ on:
           - "true"
 
   schedule:
-    # KST 18:30 = UTC 09:30
-    - cron: "30 9 * * *"
+    # KST 17:00 = UTC 08:00
+    - cron: "00 8 * * *"
 
 concurrency:
   group: fridge-sync-${{ github.ref }}
