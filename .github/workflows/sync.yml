@@ -60,16 +60,14 @@ jobs:
     env:
       TZ: Asia/Seoul
       OPENAI_MODEL: gpt-4o-mini
-
-      # Required secrets
+    
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-
-      # Pick ONE of these (recommended: B64)
-      GOOGLE_SA_JSON_B64: ${{ secrets.GOOGLE_SA_JSON_B64 }}
-      # GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
-
-      # Telegram (optional, but needed if you want notifications)
+      GOOGLE_SHEET_ID: ${{ secrets.SHEET_ID }}
+    
+      # 서비스계정 JSON 문자열(원문)로 저장했으면 아래로 전달
+      GOOGLE_SA_JSON: ${{ secrets.GOOGLE_CREDENTIALS }}
+    
+      # 텔레그램 쓰면 추가
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
