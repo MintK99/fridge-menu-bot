@@ -24,7 +24,7 @@ creds = Credentials.from_service_account_info(
 
 gc = gspread.authorize(creds)
 
-sheet = gc.open(os.environ.get("SHEET_NAME")).sheet1
+sheet = gc.open_by_key(os.environ["SHEET_ID"]).sheet1
 rows = sheet.get_all_values()
 
 inventory = rows[1:]
