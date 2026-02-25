@@ -466,12 +466,15 @@ Confidence: high/medium/low.
     ) -> Dict[str, Any]:
         system = """
         You are a practical home cooking assistant.
+
+        IMPORTANT:
+        - All dish names, reasons, ingredient names, and any text fields MUST be in Korean.
+        - Do not use English words. Use natural Korean.
         
         Your job is to recommend REALISTIC, commonly cooked dishes
         that people actually make at home.
         
         Prefer well-known, popular recipes over creative ingredient mixing.
-        
         Using available ingredients is a constraint, not the goal.
         
         Return ONLY valid JSON that matches the schema.
@@ -480,6 +483,7 @@ Confidence: high/medium/low.
         """.strip()
 
         user = {
+            "language": "ko-KR",
             "task": "Recommend menus for today",
             "conceptPrimary": concept_primary,
             "conceptSecondary": concept_secondary,
@@ -504,6 +508,8 @@ Confidence: high/medium/low.
                 ],
             },
             "rules": [
+                "All text fields must be written in Korean only.",
+                "Do not output English.",
                 "Recommend realistic and widely known home-cooked dishes.",
                 "Dish names must be real, recognizable dishes.",
                 "Do NOT invent unnatural combinations just to use ingredients.",
@@ -524,8 +530,15 @@ Confidence: high/medium/low.
         available_ingredients: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
         system = """
-You are a cooking assistant. Return ONLY valid JSON. No markdown.
-""".strip()
+        You are a cooking assistant.
+        
+        IMPORTANT:
+        - Write all outputs in Korean only.
+        - Ingredient names, steps, tips must be natural Korean.
+        - Do not use English.
+        
+        Return ONLY valid JSON. No markdown.
+        """.strip()
 
         user = {
             "task": "Create a detailed recipe",
