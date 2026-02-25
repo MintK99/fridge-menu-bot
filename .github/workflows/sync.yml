@@ -8,41 +8,52 @@ on:
         required: true
         default: "menu"
         type: choice
-        options:
-          - menu
-          - recipe
-          - estimate
+        options: [menu, recipe, estimate]
+
       recipe_id:
         description: "Recipe ID (required for recipe mode)"
         required: false
         default: ""
         type: string
+
       servings:
         description: "Override servings (optional)"
         required: false
         default: ""
         type: string
+
+      # 기존 concept (하위호환용: concept -> concept_primary로 매핑)
       concept:
-        description: "Override concept (optional)"
+        description: "DEPRECATED: Override concept (mapped to concept_primary if concept_primary empty)"
         required: false
         default: ""
         type: string
+
+      concept_primary:
+        description: "Override primary concept (optional)"
+        required: false
+        default: ""
+        type: string
+
+      concept_secondary:
+        description: "Override secondary concept (optional)"
+        required: false
+        default: ""
+        type: string
+
       trigger:
         description: "Trigger source"
         required: true
         default: "telegram"
         type: choice
-        options:
-          - schedule
-          - telegram
+        options: [schedule, telegram]
+
       no_cache:
         description: "Disable cache (menu mode; schedule uses cache by default)"
         required: false
         default: "false"
         type: choice
-        options:
-          - "false"
-          - "true"
+        options: ["false", "true"]
 
   schedule:
     # KST 17:00 = UTC 08:00
@@ -59,15 +70,17 @@ jobs:
 
     env:
       TZ: Asia/Seoul
+
       OPENAI_MODEL: gpt-4o-mini
-    
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
       GOOGLE_SHEET_ID: ${{ secrets.SHEET_ID }}
-    
+
       # 서비스계정 JSON 문자열(원문)로 저장했으면 아래로 전달
       GOOGLE_SA_JSON: ${{ secrets.GOOGLE_CREDENTIALS }}
-    
-      # 텔레그램 쓰면 추가
+      # base64로 저장하는 방식을 쓰면 이 secret도 추가해서 사용 가능(선택)
+      GOOGLE_SA_JSON_B64: ${{ secrets.GOOGLE_SA_JSON_B64 }}
+
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
@@ -90,7 +103,6 @@ jobs:
         id: inputs
         shell: bash
         run: |
-          # Defaults for schedule runs
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
             MODE="menu"
             TRIGGER="schedule"
@@ -98,6 +110,8 @@ jobs:
             RECIPE_ID=""
             SERVINGS=""
             CONCEPT=""
+            CONCEPT_PRIMARY=""
+            CONCEPT_SECONDARY=""
           else
             MODE="${{ inputs.mode }}"
             TRIGGER="${{ inputs.trigger }}"
@@ -105,6 +119,8 @@ jobs:
             RECIPE_ID="${{ inputs.recipe_id }}"
             SERVINGS="${{ inputs.servings }}"
             CONCEPT="${{ inputs.concept }}"
+            CONCEPT_PRIMARY="${{ inputs.concept_primary }}"
+            CONCEPT_SECONDARY="${{ inputs.concept_secondary }}"
           fi
 
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
@@ -113,6 +129,8 @@ jobs:
           echo "recipe_id=$RECIPE_ID" >> "$GITHUB_OUTPUT"
           echo "servings=$SERVINGS" >> "$GITHUB_OUTPUT"
           echo "concept=$CONCEPT" >> "$GITHUB_OUTPUT"
+          echo "concept_primary=$CONCEPT_PRIMARY" >> "$GITHUB_OUTPUT"
+          echo "concept_secondary=$CONCEPT_SECONDARY" >> "$GITHUB_OUTPUT"
 
       - name: Validate required secrets
         shell: bash
@@ -136,12 +154,22 @@ jobs:
           if [[ -n "${{ steps.inputs.outputs.recipe_id }}" ]]; then
             CMD+=(--recipe_id "${{ steps.inputs.outputs.recipe_id }}")
           fi
+
           if [[ -n "${{ steps.inputs.outputs.servings }}" ]]; then
             CMD+=(--servings "${{ steps.inputs.outputs.servings }}")
           fi
+
+          # 하위 호환: concept이 들어오면 concept_primary로 매핑 (파이썬에서도 한 번 더 처리)
           if [[ -n "${{ steps.inputs.outputs.concept }}" ]]; then
             CMD+=(--concept "${{ steps.inputs.outputs.concept }}")
           fi
+          if [[ -n "${{ steps.inputs.outputs.concept_primary }}" ]]; then
+            CMD+=(--concept_primary "${{ steps.inputs.outputs.concept_primary }}")
+          fi
+          if [[ -n "${{ steps.inputs.outputs.concept_secondary }}" ]]; then
+            CMD+=(--concept_secondary "${{ steps.inputs.outputs.concept_secondary }}")
+          fi
+
           if [[ "${{ steps.inputs.outputs.no_cache }}" == "true" ]]; then
             CMD+=(--no_cache)
           fi
@@ -154,6 +182,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: run-info
-          path: |
-            ${{ github.workspace }}
+          path: ${{ github.workspace }}
           if-no-files-found: ignore
