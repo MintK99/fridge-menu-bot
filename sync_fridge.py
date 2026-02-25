@@ -18,7 +18,7 @@ Required env vars (recommended):
 
 Optional:
   TZ            : default "Asia/Seoul"
-  OPENAI_MODEL  : default "gpt-4o-mini"
+  OPENAI_MODEL  : default "gpt-4o"
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ import urllib.request
 # Constants / Helpers
 # =========================
 TZ_NAME = os.getenv("TZ", "Asia/Seoul")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 
 REQUIRED_TABS = ["Inventory", "Pantry", "Settings", "DailyMenus"]
 
@@ -465,11 +465,19 @@ Confidence: high/medium/low.
         alerts: Dict[str, Any],
     ) -> Dict[str, Any]:
         system = """
-You are a meal planning assistant.
-Return ONLY valid JSON that matches the schema. No markdown.
-Use Korean food names if appropriate, but keep fields concise.
-Nutrition is rough estimate per serving.
-""".strip()
+        You are a practical home cooking assistant.
+        
+        Your job is to recommend REALISTIC, commonly cooked dishes
+        that people actually make at home.
+        
+        Prefer well-known, popular recipes over creative ingredient mixing.
+        
+        Using available ingredients is a constraint, not the goal.
+        
+        Return ONLY valid JSON that matches the schema.
+        No markdown.
+        Nutrition is a rough estimate per serving.
+        """.strip()
 
         user = {
             "task": "Recommend menus for today",
@@ -496,12 +504,14 @@ Nutrition is rough estimate per serving.
                 ],
             },
             "rules": [
-                "Primary goal is the top priority. Secondary is a style/constraint to apply if possible.",
-                "Focus on using expiringSoon first; never suggest using expired items.",
-                "Menus must be diverse; avoid duplicates.",
-                "If missing ingredients are needed, list them in missing.",
-                "Keep 'why' short and specific.",
-                "IDs must be 1..menuCount",
+                "Recommend realistic and widely known home-cooked dishes.",
+                "Dish names must be real, recognizable dishes.",
+                "Do NOT invent unnatural combinations just to use ingredients.",
+                "Using available ingredients is preferred but must preserve dish authenticity.",
+                "At most 1-2 minor missing ingredients are allowed.",
+                "If missing ingredients exist, list them clearly in 'missing'.",
+                "If substitution is possible, mention it briefly in 'why'.",
+                "Prefer easy and practical recipes."
             ],
         }
 
