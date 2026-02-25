@@ -414,11 +414,29 @@ Confidence: high/medium/low.
                 ]
             },
             "rules": [
-                "If purchasedDate is missing or invalid, make a reasonable estimate and set confidence=low.",
-                "If storage is Freezer, typically longer than Fridge.",
-                "If item is ambiguous, choose safe side (earlier date) and lower confidence.",
-                "estimatedUseBy must be ISO date string.",
+                "Recommend realistic, well-known home dishes.",
+                "Dish names must be actual dish names, not ingredient lists.",
+                "Do not invent strange combinations just to use ingredients.",
+                "Using available ingredients is preferred but must preserve dish authenticity.",
+                "If 1-3 minor ingredients are missing, list them in 'missing'.",
+                "If substitution is possible using available ingredients, mention it in 'why'.",
+                "Expired items must never be used.",
+                "ExpiringSoon items are preferred but not mandatory.",
+                "Menus should feel like something people commonly cook at home."
             ],
+            "example_good": {
+              "name": "닭볶음탕",
+              "why": "집에서 자주 해먹는 대표적인 닭 요리이며 보유한 닭고기를 활용 가능",
+              "uses": ["닭고기", "감자"],
+              "missing": ["고추장"]
+            },
+            "scoring_criteria": [
+                "Recipe realism",
+                "Common household dish likelihood",
+                "Ingredient coherence",
+                "Simplicity",
+                "Balance"
+            ]
         }
 
         out = self._chat_json(system=system, user=compact_json(user))
