@@ -391,52 +391,36 @@ Use conservative, practical home-cooking assumptions.
 Confidence: high/medium/low.
 """.strip()
 
-        user = {
-            "task": "Estimate use-by dates",
-            "input_items": [
-                {
-                    "item": it.item,
-                    "storage": it.storage,
-                    "purchasedDate": it.purchased_date,
-                    "category": it.category,
-                    "notes": it.notes,
-                }
-                for it in items
-            ],
-            "output_schema": {
-                "estimates": [
-                    {
-                        "item": "string",
-                        "estimatedUseBy": "YYYY-MM-DD",
-                        "confidence": "high|medium|low",
-                        "basis": "short explanation",
-                    }
-                ]
-            },
-            "rules": [
-                "Recommend realistic, well-known home dishes.",
-                "Dish names must be actual dish names, not ingredient lists.",
-                "Do not invent strange combinations just to use ingredients.",
-                "Using available ingredients is preferred but must preserve dish authenticity.",
-                "If 1-3 minor ingredients are missing, list them in 'missing'.",
-                "If substitution is possible using available ingredients, mention it in 'why'.",
-                "Expired items must never be used.",
-                "ExpiringSoon items are preferred but not mandatory.",
-                "Menus should feel like something people commonly cook at home."
-            ],
-            "example_good": {
-              "name": "닭볶음탕",
-              "why": "집에서 자주 해먹는 대표적인 닭 요리이며 보유한 닭고기를 활용 가능",
-              "uses": ["닭고기", "감자"],
-              "missing": ["고추장"]
-            },
-            "scoring_criteria": [
-                "Recipe realism",
-                "Common household dish likelihood",
-                "Ingredient coherence",
-                "Simplicity",
-                "Balance"
-            ]
+        "user": {
+          "task": "Design realistic and appetizing home-cooked dishes",
+          "conceptPrimary": concept_primary,
+          "conceptSecondary": concept_secondary,
+          "requestedServings": servings,
+          "menuCount": menu_count,
+          "availableIngredients": inventory_summary,
+          "constraints": {
+              "maxMissingIngredients": 2,
+              "expiredMustNotBeUsed": True,
+              "avoidGenericMixing": True
+          },
+          "rules": [
+              "First think of well-known dishes that match these ingredients.",
+              "Then adapt them slightly if needed.",
+              "Do not invent unnatural dish names.",
+              "Do not create dishes that are just ingredient combinations.",
+              "At most 1-2 minor ingredients can be missing.",
+              "If something is missing, list it clearly.",
+              "Descriptions in 'why' must be vivid and make the dish sound delicious.",
+              "Menus must be diverse in cooking style.",
+              "Avoid repeating similar types (e.g., no 3 stir-fries in a row)."
+          ],
+          "evaluation_criteria": [
+              "Real-world popularity",
+              "Appetite appeal",
+              "Ingredient coherence",
+              "Home-cooking practicality",
+              "Variety across menu list"
+          ]
         }
 
         out = self._chat_json(system=system, user=compact_json(user))
@@ -465,21 +449,23 @@ Confidence: high/medium/low.
         alerts: Dict[str, Any],
     ) -> Dict[str, Any]:
         system = """
-        You are a practical home cooking assistant.
+        You are an experienced home chef.
 
-        IMPORTANT:
-        - All dish names, reasons, ingredient names, and any text fields MUST be in Korean.
-        - Do not use English words. Use natural Korean.
+        Your role is not to combine ingredients randomly,
+        but to design dishes that people would genuinely want to cook and eat.
         
-        Your job is to recommend REALISTIC, commonly cooked dishes
-        that people actually make at home.
+        Important principles:
         
-        Prefer well-known, popular recipes over creative ingredient mixing.
+        1. Start from REAL, recognizable dishes.
+        2. Adapt them intelligently to available ingredients.
+        3. Keep authenticity and culinary logic.
+        4. Make descriptions vivid and appetizing.
+        5. Creativity is allowed, but must feel natural and realistic.
+        
         Using available ingredients is a constraint, not the goal.
         
-        Return ONLY valid JSON that matches the schema.
-        No markdown.
-        Nutrition is a rough estimate per serving.
+        All outputs must be in Korean.
+        Return ONLY valid JSON. No markdown.
         """.strip()
 
         user = {
