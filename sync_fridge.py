@@ -467,10 +467,10 @@ Confidence: high/medium/low.
         All outputs must be in Korean.
         Return ONLY valid JSON. No markdown.
         """.strip()
-
+      
         user = {
             "language": "ko-KR",
-            "task": "Recommend menus for today",
+            "task": "오늘 메뉴 추천",
             "conceptPrimary": concept_primary,
             "conceptSecondary": concept_secondary,
             "requestedServings": servings,
@@ -496,13 +496,21 @@ Confidence: high/medium/low.
             "rules": [
                 "All text fields must be written in Korean only.",
                 "Do not output English.",
-                "Recommend realistic and widely known home-cooked dishes.",
-                "Dish names must be real, recognizable dishes.",
-                "Do NOT invent unnatural combinations just to use ingredients.",
-                "Using available ingredients is preferred but must preserve dish authenticity.",
+        
+                "Start from REAL, recognizable dishes people commonly cook at home.",
+                "Then adapt them intelligently to fit available ingredients.",
+                "Do NOT invent unnatural dish names.",
+                "Do NOT create dishes that are just ingredient combinations.",
+                "Using available ingredients is a constraint, not the goal.",
+        
+                "Expired items must never be used.",
                 "At most 1-2 minor missing ingredients are allowed.",
                 "If missing ingredients exist, list them clearly in 'missing'.",
-                "If substitution is possible, mention it briefly in 'why'.",
+                "If substitution is possible using available ingredients, mention it briefly in 'why'.",
+        
+                "Descriptions in 'why' must be vivid and appetizing (not generic).",
+                "Menus must be diverse in cooking style (stir-fry, soup, braise, salad, grill, etc.).",
+                "Avoid repeating similar types.",
                 "Prefer easy and practical recipes."
             ],
         }
