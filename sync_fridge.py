@@ -384,48 +384,49 @@ class LLMClient:
     def estimate_useby(self, items: List[EstimateRequestItem]) -> List[EstimateResultItem]:
         if not items:
             return []
-
+    
         system = """
-You estimate food "use by" dates. Return ONLY valid JSON. No markdown.
-Use conservative, practical home-cooking assumptions.
-Confidence: high/medium/low.
-""".strip()
-
-        "user": {
-          "task": "Design realistic and appetizing home-cooked dishes",
-          "conceptPrimary": concept_primary,
-          "conceptSecondary": concept_secondary,
-          "requestedServings": servings,
-          "menuCount": menu_count,
-          "availableIngredients": inventory_summary,
-          "constraints": {
-              "maxMissingIngredients": 2,
-              "expiredMustNotBeUsed": True,
-              "avoidGenericMixing": True
-          },
-          "rules": [
-              "First think of well-known dishes that match these ingredients.",
-              "Then adapt them slightly if needed.",
-              "Do not invent unnatural dish names.",
-              "Do not create dishes that are just ingredient combinations.",
-              "At most 1-2 minor ingredients can be missing.",
-              "If something is missing, list it clearly.",
-              "Descriptions in 'why' must be vivid and make the dish sound delicious.",
-              "Menus must be diverse in cooking style.",
-              "Avoid repeating similar types (e.g., no 3 stir-fries in a row)."
-          ],
-          "evaluation_criteria": [
-              "Real-world popularity",
-              "Appetite appeal",
-              "Ingredient coherence",
-              "Home-cooking practicality",
-              "Variety across menu list"
-          ]
+          You estimate food "use by" dates.
+          Return ONLY valid JSON. No markdown.
+          Use conservative, practical home-cooking assumptions.
+          Confidence: high/medium/low.
+          All outputs must be in Korean.
+          """.strip()
+    
+        user = {
+            "task": "Estimate use-by dates for food items",
+            "items": [
+                {
+                    "item": it.item,
+                    "storage": it.storage,
+                    "purchasedDate": it.purchased_date,
+                    "category": it.category,
+                    "notes": it.notes,
+                }
+                for it in items
+            ],
+            "schema": {
+                "estimates": [
+                    {
+                        "item": "string",
+                        "estimatedUseBy": "YYYY-MM-DD",
+                        "confidence": "high|medium|low",
+                        "basis": "string",
+                    }
+                ]
+            },
+            "rules": [
+                "Write all text in Korean only.",
+                "Do not output English.",
+                "Return dates in YYYY-MM-DD format.",
+                "Be conservative if uncertain.",
+                "Basis must be short and practical (1 sentence).",
+            ],
         }
-
+    
         out = self._chat_json(system=system, user=compact_json(user))
+    
         estimates = out.get("estimates", [])
-
         results: List[EstimateResultItem] = []
         for e in estimates:
             results.append(
