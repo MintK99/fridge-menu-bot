@@ -497,22 +497,20 @@ class LLMClient:
             "rules": [
                 "All text fields must be written in Korean only.",
                 "Do not output English.",
-        
-                "Start from REAL, recognizable dishes people commonly cook at home.",
-                "Then adapt them intelligently to fit available ingredients.",
-                "Do NOT invent unnatural dish names.",
-                "Do NOT create dishes that are just ingredient combinations.",
+            
+                "Start from real recognizable dishes but adapt them creatively.",
+                "Prefer trendy recipes that could appear on Instagram, YouTube cooking channels, or modern food blogs.",
+                "Menus should feel modern and slightly trendy rather than traditional.",
+                
+                "Avoid overused default dishes such as 김치볶음밥, 김치찌개, 라면 variations unless reinvented.",
+            
                 "Using available ingredients is a constraint, not the goal.",
-        
-                "Expired items must never be used.",
                 "At most 1-2 minor missing ingredients are allowed.",
                 "If missing ingredients exist, list them clearly in 'missing'.",
-                "If substitution is possible using available ingredients, mention it briefly in 'why'.",
-        
-                "Descriptions in 'why' must be vivid and appetizing (not generic).",
-                "Menus must be diverse in cooking style (stir-fry, soup, braise, salad, grill, etc.).",
-                "Avoid repeating similar types.",
-                "Prefer easy and practical recipes."
+            
+                "Descriptions in 'why' must sound exciting and appetizing like a food blogger describing a dish.",
+                "Menus must be diverse in cooking style.",
+                "Prefer easy but interesting recipes."
             ],
         }
 
